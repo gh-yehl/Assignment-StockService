@@ -10,40 +10,34 @@ pipeline {
                 sh 'rm -rf /application/jenkins/deploy'
                 sh 'mkdir -p /application/jenkins/deploy'
                 echo '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<   Download SourceCode from GitHub  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-                sh 'git clone git@github.com:gh-yehl/fullstackuser.git "${JENKINS_FOLDER}/deploy"'
+                sh 'git clone git@github.com:gh-yehl/Assignment-StockService.git "${JENKINS_FOLDER}/deploy"'
                 echo "Source Code Download Completed!!!"
             }
         }
 
         stage('Maven Build SourceCode') {
             steps {
-                echo '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Maven Packaging SourceCode   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+                echo '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Maven Packaging SourceCode including Junit test   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
                 sh 'mvn -f "${JENKINS_FOLDER}/deploy"/pom.xml package'
                 echo 'Package SourceCode Completed'
             }
         }
-        stage('Junit Test') {
-            steps {
-                echo '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<   Junit test   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-            }
-        }
+
         stage('Deploy To Docker') {
 
             steps {
-                echo '<<<<<<<<<<<<<<<<<<<<<<<<<<<<   Stop and Remove Users Container in Docker   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-                sh 'docker stop users'
-                sh 'docker rm users'
-                echo '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<   Create New Image and Users Container   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-                sh 'cp "${JENKINS_FOLDER}/deploy"/target/service-users-1.0-SNAPSHOT.jar "${JENKINS_FOLDER}/deploy"/src/main/docker'
-                //sh 'docker build -tf "${JENKINS_FOLDER}/deploy"/src/main/docker/Dockerfile -t funny5/service-users-new .'
-                //sh 'docker run -idt --memory=400M --name=users --net=backend -p 9000:9000 funny5/service-users-new'
-                sh '/application/creatcontainer.sh'
+                echo '<<<<<<<<<<<<<<<<<<<<<<<<<<<<   Stop and Remove Exchange Container in Docker   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+                sh 'docker stop exchange'
+                sh 'docker rm exchange'
+                sh 'docker rmi funny5/exchange-service'
+                echo '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<   Create New Image and Exchange Container   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+                sh 'cp "${JENKINS_FOLDER}/deploy"/target/exchange-service-1.0-SNAPSHOT.jar "${JENKINS_FOLDER}/deploy"/src/main/docker'
+                sh 'docker build -tf "${JENKINS_FOLDER}/deploy"/src/main/docker/Dockerfile -t exchange-service .'
+                sh 'docker run -idt --memory=400M --name=exchange --net=backend -p 9001:9001 exchange-service'
+                sh 'docker tag  exchange-service funny5/exchange-service'
+                sh 'docker login'
+                sh 'docker push funny5/exchange-service'
 
-
-
-                //print 'cmd /c d:\\testgroovy.bat'.execute()
-                //print 'cmd /c git clone https://github.com/gh-yehl/fullstackuser.git d:\\new'.execute()
-                //print "cmd /c git clone git@github.com:gh-yehl/fullstackuser.git ${jenkins_home_path}".execute()
                 echo '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<   Deploying to Docker Done   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
 
             }
